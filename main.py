@@ -10,8 +10,7 @@ import string
 import random
 
 # For making HTTP requests from the GAE server.
-import urllib2
-import urlfetch
+from google.appengine.api import urlfetch
 
 class MainPage(webapp2.RequestHandler):
     def get(self):
@@ -22,32 +21,76 @@ class MainPage(webapp2.RequestHandler):
         state = ''.join(random.choice(
             string.ascii_lowercase + string.ascii_uppercase + string.digits) for _ in range(length))
         # Ensure state can be verified when auth code comes back
-        AccessHandler.state = state
+        AuthHandler.state = state
 
-        # From google documentation
-        base_oauth_url = "https://accounts.google.com/o/oauth2/v2/auth?"
+        # Read in the important data from the JSON file
+        # From https://stackoverflow.com/questions/20199126/reading-json-from-a-file
+        data = ''
+        with open('client_secret.json') as json_data:
+            data = json.load(json_data)
+        json_string = json.dumps(data)
+
+        # From google documentation, set up the url for the oauth2.0 endpoint
+        base_oauth_url = data["web"]["auth_uri"]
         scope = "email"
-        oauth_url = base_oauth_url
+        oauth_url = base_oauth_url + '?' \
+            + 'client_id=' + data["web"]["client_id"] \
+            + '&' + 'response_type=' + 'code' \
+            + '&' + 'scope=' + scope \
+            + '&' + 'redirect_uri=' + data["web"]["redirect_uris"][0] \
+            + '&' + 'state=' + state
 
         template_values = {
             'url': oauth_url,
-            'state': state
+            'state': state,
+            'json': json_string
         }
         path = os.path.join(os.path.dirname(__file__), 'index.html')
         self.response.out.write(template.render(path, template_values))
         httpcodes.write_created(self)
 
 # Handles exchanging the authorization code for an access token
-class AccessHandler(webapp2.RequestHandler):
+class AuthHandler(webapp2.RequestHandler):
     state = "default"
     def get(self):
         # Confirm that the state is correct.
+        if self.request.GET['state'] != AuthHandler.state:
+            httpcodes.write_forbidden(self)
+            self.response.write("FORBIDDEN")
+            return
+
+        # Read in the important data from the JSON file
+        # From https://stackoverflow.com/questions/20199126/reading-json-from-a-file
+        data = ''
+        with open('client_secret.json') as json_data:
+            data = json.load(json_data)
+        json_string = json.dumps(data)
 
         # Swap the auth token for an access token
-        base = "https://www.googleapis.com/oauth2/v4/token"
+        oauth_url = data["web"]['token_uri']
             
+        template_values = {
+            'received_url': json.dumps(self.request.GET.dict_of_lists()),
+            'received_state': self.request.GET['state'],
+            'received_code': self.request.GET['code'],
+            'url': oauth_url,
+            'state': AuthHandler.state,
+            'json': json_string
+        }
+        path = os.path.join(os.path.dirname(__file__), 'authorized.html')
+        self.response.out.write(template.render(path, template_values))
+        httpcodes.write_created(self)
 
-class AppHandler(webapp2.RequestHandler):
+        # Prepare the POST request to get the new token
+        payload = dict()
+        payload['client_id'] = data["web"]["client_id"]
+        payload["code"] = self.request.GET['code']
+        payload['client_secret'] = data["web"]["client_secret"]
+        payload["grant_type"] = "authorization_code"
+        paylod["redirect_uri"] = 
+        urlfetch.fetch(oauth_url, method="POST")
+
+class AccessHandler(webapp2.RequestHandler):
     state = "default"
     def get(self):
         base = "https://localhost:8080"
@@ -56,7 +99,7 @@ class AppHandler(webapp2.RequestHandler):
 # [START app]
 app = webapp2.WSGIApplication([
     ('/', MainPage),
-    ('/authorized', AppHandler),
+    ('/authorized', AuthHandler),
     ('/partial', AccessHandler),
 ], debug=True)
 # [END app]
