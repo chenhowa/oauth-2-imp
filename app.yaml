@@ -1,0 +1,9 @@
+runtime: python27
+api_version: 1
+threadsafe: false
+
+handlers:
+# This specifies that all urls rooted at this app are handled using the
+# app.py script
+- url: /.*
+  script: main.app
