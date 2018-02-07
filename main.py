@@ -11,6 +11,7 @@ import random
 
 # For making HTTP requests from the GAE server.
 from google.appengine.api import urlfetch
+import urllib
 
 class MainPage(webapp2.RequestHandler):
     def get(self):
@@ -58,48 +59,65 @@ class AuthHandler(webapp2.RequestHandler):
             httpcodes.write_forbidden(self)
             self.response.write("FORBIDDEN")
             return
+        try:
+            self.request.GET['error']
+            httpcodes.write_bad_request(self)
+            self.response.write("ACCESS DENIED")
+            return
+        except:
+            # Read in the important data from the JSON file
+            # From https://stackoverflow.com/questions/20199126/reading-json-from-a-file
+            data = ''
+            with open('client_secret.json') as json_data:
+                data = json.load(json_data)
+            json_string = json.dumps(data)
 
-        # Read in the important data from the JSON file
-        # From https://stackoverflow.com/questions/20199126/reading-json-from-a-file
-        data = ''
-        with open('client_secret.json') as json_data:
-            data = json.load(json_data)
-        json_string = json.dumps(data)
+            # Swap the auth token for an access token
+            oauth_url = data["web"]['token_uri']
+                
+            # Prepare the POST request to get the new token
+            payload = dict()
+            payload['client_id'] = data["web"]["client_id"]
+            payload["code"] = self.request.GET['code']
+            payload['client_secret'] = data["web"]["client_secret"]
+            payload["grant_type"] = "authorization_code"
+            payload["redirect_uri"] = data["web"]["redirect_uris"][0]
+            p = urllib.urlencode(payload)
+            result = urlfetch.fetch(url=oauth_url, method=urlfetch.POST, \
+                    payload=p, validate_certificate=True)
 
-        # Swap the auth token for an access token
-        oauth_url = data["web"]['token_uri']
-            
-        template_values = {
-            'received_url': json.dumps(self.request.GET.dict_of_lists()),
-            'received_state': self.request.GET['state'],
-            'received_code': self.request.GET['code'],
-            'url': oauth_url,
-            'state': AuthHandler.state,
-            'json': json_string
-        }
-        path = os.path.join(os.path.dirname(__file__), 'authorized.html')
-        self.response.out.write(template.render(path, template_values))
-        httpcodes.write_created(self)
+            print(result)
+            print(result.content)
+            print(result.status_code)
+            print(result.headers)
 
-        # Prepare the POST request to get the new token
-        payload = dict()
-        payload['client_id'] = data["web"]["client_id"]
-        payload["code"] = self.request.GET['code']
-        payload['client_secret'] = data["web"]["client_secret"]
-        payload["grant_type"] = "authorization_code"
-        paylod["redirect_uri"] = 
-        urlfetch.fetch(oauth_url, method="POST")
+            # Show everyting that happened
+            template_values = {
+                'received_url': json.dumps(self.request.GET.dict_of_lists()),
+                'received_state': self.request.GET['state'],
+                'received_code': self.request.GET['code'],
+                'received_content': result.content,
+                # 'result': json.dumps(result),
+                'url': oauth_url,
+                'state': AuthHandler.state,
+                'json': json_string
+            }
+            path = os.path.join(os.path.dirname(__file__), 'authorized.html')
+            self.response.out.write(template.render(path, template_values))
+            httpcodes.write_created(self)
+
 
 class AccessHandler(webapp2.RequestHandler):
     state = "default"
     def get(self):
         base = "https://localhost:8080"
+        self.response.write("YOU REACHED THE FINAL PAGE")
 
 
 # [START app]
 app = webapp2.WSGIApplication([
     ('/', MainPage),
     ('/authorized', AuthHandler),
-    ('/partial', AccessHandler),
+    ('/access', AccessHandler),
 ], debug=True)
 # [END app]
