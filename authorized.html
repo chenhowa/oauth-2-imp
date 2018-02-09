@@ -4,17 +4,22 @@
 <html>
 <head>
     <title>OAuth 2.0 Authorization</title>
+    <link rel="stylesheet" href="https://unpkg.com/purecss@1.0.0/build/pure-min.css" integrity="sha384-nn4HPE8lTHyVtfCBi5yW9d20FjT8BJwUXyWZT9InLYax14RDjBj46LmSztkmNP9w" crossorigin="anonymous">
 </head>
 <body>
-    <h1>Received information</h1>
+    <h1>Received information from OAuth 2.0 Endpoint</h1>
     <p>Parameters: {{ received_url }}</p>
-    <p>State: {{ received_state }} </p>
+    <p>STATE: {{ received_state }} </p>
     <p>Code: {{ received_code }} </p>
-    <p>Content: {{ received_content }}  </p>
     <h2>Known Request Information</h2>
     <p>STATE: {{ state }}</p>
-    <p>JSON: {{ json }}</p>
+    <p>JSON SECRET: {{ json }}</p>
+    <h2>After Code->Token Swap Information</h2>
     <p>Swap URL: {{ url }}</p>
+    <p>Content: {{ swap_content }}  </p>
+    <p>Name: {{ first_name }} {{ last_name }} </p>
+    <p> G+ Link: {{ google_link }} </p>
+    <a href="{{ google_link }}">G+ Profile Link</a>
 </body>
 
 

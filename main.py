@@ -86,38 +86,48 @@ class AuthHandler(webapp2.RequestHandler):
             result = urlfetch.fetch(url=oauth_url, method=urlfetch.POST, \
                     payload=p, validate_certificate=True)
 
-            print(result)
-            print(result.content)
-            print(result.status_code)
-            print(result.headers)
+            content = json.loads(result.content)
+            # print(result)
+            # print(result.content)
+            # print(result.status_code)
+            # print(result.headers)
+
+            # Take the results and use it to fetch the Google+ information
+            headers = dict()
+            headers["Authorization"] = "Bearer" + " " + \
+                    content["access_token"]
+            google_url = "https://www.googleapis.com/plus/v1/people/me"
+            result_2 = urlfetch.fetch(url=google_url, method=urlfetch.GET, \
+                    headers = headers, payload=None, validate_certificate=True)
+            content_2 = json.loads(result_2.content)
+
+            # print(result_2)
+            # print(result_2.content)
+            # print(result_2.status_code)
+            # print(result_2.headers)
 
             # Show everyting that happened
             template_values = {
                 'received_url': json.dumps(self.request.GET.dict_of_lists()),
                 'received_state': self.request.GET['state'],
                 'received_code': self.request.GET['code'],
-                'received_content': result.content,
-                # 'result': json.dumps(result),
+                'swap_content': result.content,
                 'url': oauth_url,
                 'state': AuthHandler.state,
-                'json': json_string
+                'json': json_string,
+                'first_name': content_2["name"]["givenName"],
+                'last_name': content_2["name"]["familyName"],
+                'google_link': content_2["url"]
             }
             path = os.path.join(os.path.dirname(__file__), 'authorized.html')
             self.response.out.write(template.render(path, template_values))
             httpcodes.write_created(self)
 
 
-class AccessHandler(webapp2.RequestHandler):
-    state = "default"
-    def get(self):
-        base = "https://localhost:8080"
-        self.response.write("YOU REACHED THE FINAL PAGE")
-
 
 # [START app]
 app = webapp2.WSGIApplication([
     ('/', MainPage),
     ('/authorized', AuthHandler),
-    ('/access', AccessHandler),
 ], debug=True)
 # [END app]
