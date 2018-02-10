@@ -14,15 +14,14 @@ from google.appengine.api import urlfetch
 import urllib
 
 class MainPage(webapp2.RequestHandler):
+    state = "default";
     def get(self):
         # Method to generate a random string is from
         # https://stackoverflow.com/questions/2257441/random
         #   -string-generation-with-upper-case-letters-and-digits-in-python
         length = 50
-        state = ''.join(random.choice(
+        MainPage.state = ''.join(random.choice(
             string.ascii_lowercase + string.ascii_uppercase + string.digits) for _ in range(length))
-        # Ensure state can be verified when auth code comes back
-        AuthHandler.state = state
 
         # Read in the important data from the JSON file
         # From https://stackoverflow.com/questions/20199126/reading-json-from-a-file
@@ -39,11 +38,11 @@ class MainPage(webapp2.RequestHandler):
             + '&' + 'response_type=' + 'code' \
             + '&' + 'scope=' + scope \
             + '&' + 'redirect_uri=' + data["web"]["redirect_uris"][0] \
-            + '&' + 'state=' + state
+            + '&' + 'state=' + MainPage.state
 
         template_values = {
             'url': oauth_url,
-            'state': state,
+            'state': MainPage.state,
             'json': json_string
         }
         path = os.path.join(os.path.dirname(__file__), 'index.html')
@@ -52,10 +51,9 @@ class MainPage(webapp2.RequestHandler):
 
 # Handles exchanging the authorization code for an access token
 class AuthHandler(webapp2.RequestHandler):
-    state = "default"
     def get(self):
         # Confirm that the state is correct.
-        if self.request.GET['state'] != AuthHandler.state:
+        if self.request.GET['state'] != MainPage.state:
             httpcodes.write_forbidden(self)
             self.response.write("FORBIDDEN")
             return
@@ -113,7 +111,7 @@ class AuthHandler(webapp2.RequestHandler):
                 'received_code': self.request.GET['code'],
                 'swap_content': result.content,
                 'url': oauth_url,
-                'state': AuthHandler.state,
+                'state': MainPage.state,
                 'json': json_string,
                 'first_name': content_2["name"]["givenName"],
                 'last_name': content_2["name"]["familyName"],
