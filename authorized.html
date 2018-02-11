@@ -9,13 +9,13 @@
 <body>
     <h2>Purpose </h2>
     <p>The purpose of this page is to implement the OAuth 2.0 workflow. In particular, this page will receive the access code from Google, and swap the access code for an authorization token from Google</p>
-    <h2>Received information from OAuth 2.0 Endpoint</h2>
-    <p>Parameters: {{ received_url }}</p>
-    <p>STATE: {{ received_state }} </p>
-    <p>Code: {{ received_code }} </p>
     <h2>Known Request Information</h2>
     <p>STATE: {{ state }}</p>
     <p>JSON SECRET: {{ json }}</p>
+    <h2>Received information BEFORE Code->Token Swap</h2>
+    <p>Parameters: {{ received_url }}</p>
+    <p>STATE: {{ received_state }} </p>
+    <p>Code: {{ received_code }} </p>
     <h2>After Code->Token Swap Information</h2>
     <p>Swap URL: {{ url }}</p>
     <p>Content: {{ swap_content }}  </p>
