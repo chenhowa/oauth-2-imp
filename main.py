@@ -19,6 +19,10 @@ class MainPage(webapp2.RequestHandler):
         # Method to generate a random string is from
         # https://stackoverflow.com/questions/2257441/random
         #   -string-generation-with-upper-case-letters-and-digits-in-python
+        #
+        # The basic idea is that the code iterates over a list of length 50, and 
+        # for each iteration, it finds a new random character and joins that to
+        # the other characters.
         length = 50
         MainPage.state = ''.join(random.choice(
             string.ascii_lowercase + string.ascii_uppercase + string.digits) for _ in range(length))
@@ -40,12 +44,17 @@ class MainPage(webapp2.RequestHandler):
             + '&' + 'redirect_uri=' + data["web"]["redirect_uris"][0] \
             + '&' + 'state=' + MainPage.state
 
+        # Set template values for displaying to client
+        # From webapp2 documentation on templates: 
+        # http://webapp2.readthedocs.io/en/latest/tutorials/gettingstarted/templates.html
         template_values = {
             'url': oauth_url,
             'state': MainPage.state,
             'json': json_string
         }
+        # Grab the html file in question.
         path = os.path.join(os.path.dirname(__file__), 'index.html')
+        # Substitute the template values in
         self.response.out.write(template.render(path, template_values))
         httpcodes.write_created(self)
 
@@ -58,6 +67,7 @@ class AuthHandler(webapp2.RequestHandler):
             self.response.write("FORBIDDEN")
             return
         try:
+            # Check if the original request led to an error
             self.request.GET['error']
             httpcodes.write_bad_request(self)
             self.response.write("ACCESS DENIED")
@@ -97,6 +107,7 @@ class AuthHandler(webapp2.RequestHandler):
             google_url = "https://www.googleapis.com/plus/v1/people/me"
             result_2 = urlfetch.fetch(url=google_url, method=urlfetch.GET, \
                     headers = headers, payload=None, validate_certificate=True)
+            # Contains the returned content from the Google Plus API
             content_2 = json.loads(result_2.content)
 
             # print(result_2)

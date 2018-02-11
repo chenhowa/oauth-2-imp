@@ -7,7 +7,9 @@
     <link rel="stylesheet" href="https://unpkg.com/purecss@1.0.0/build/pure-min.css" integrity="sha384-nn4HPE8lTHyVtfCBi5yW9d20FjT8BJwUXyWZT9InLYax14RDjBj46LmSztkmNP9w" crossorigin="anonymous">
 </head>
 <body>
-    <h1>Received information from OAuth 2.0 Endpoint</h1>
+    <h2>Purpose </h2>
+    <p>The purpose of this page is to implement the OAuth 2.0 workflow. In particular, this page will receive the access code from Google, and swap the access code for an authorization token from Google</p>
+    <h2>Received information from OAuth 2.0 Endpoint</h2>
     <p>Parameters: {{ received_url }}</p>
     <p>STATE: {{ received_state }} </p>
     <p>Code: {{ received_code }} </p>
